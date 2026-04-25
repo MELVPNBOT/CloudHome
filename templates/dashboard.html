@@ -1,0 +1,30 @@
+<body style="background:#121212; color:white; font-family:sans-serif;">
+    <h1>Моё Облако</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <button type="submit">Загрузить</button>
+    </form>
+    <hr>
+    {% for f in files %}
+    <div style="border:1px solid #333; padding:10px; margin:5px;">
+        <b>{{ f.name }}</b> 
+        <a href="{{ f.download_url }}" style="color:lime;">Скачать</a> |
+        <a href="/delete/{{ f.name }}" style="color:red;">Удалить</a>
+        
+        {% if f.name.endswith('.txt') or f.name.endswith('.json') %}
+            | <a href="/edit/{{ f.name }}" style="color:orange;">Редактировать</a>
+        {% endif %}
+
+        {% if f.name.endswith('.mp4') or f.name.endswith('.mp3') %}
+            <br><audio src="{{ f.download_url }}" controls></audio>
+        {% endif %}
+
+        <form action="/rename" method="post" style="display:inline; margin-left:20px;">
+            <input type="hidden" name="old" value="{{ f.name }}">
+            <input name="new" placeholder="Новое имя" required>
+            <button type="submit">Переименовать</button>
+        </form>
+    </div>
+    {% endfor %}
+    <br><a href="/logout">Выйти</a>
+</body>

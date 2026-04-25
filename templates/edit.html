@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Редактирование: {{ name }}</title>
+    <style>
+        body { background: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; padding: 40px; }
+        .editor-container { max-width: 900px; margin: auto; }
+        textarea { 
+            width: 100%; height: 500px; 
+            background: #1e1e1e; color: #00ff41; 
+            border: 1px solid #333; border-radius: 8px; 
+            padding: 15px; font-family: 'Consolas', monospace; font-size: 14px;
+            resize: vertical; outline: none;
+        }
+        .btn-save { 
+            background: #0078d4; color: white; border: none; 
+            padding: 10px 25px; border-radius: 5px; cursor: pointer; 
+            font-weight: bold; margin-top: 15px;
+        }
+        .btn-save:hover { background: #005a9e; }
+        .back-link { color: #888; text-decoration: none; display: block; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="editor-container">
+        <a href="/dashboard" class="back-link">← Вернуться в облако</a>
+        <h2>Файл: <span style="color: #0078d4;">{{ name }}</span></h2>
+        
+        <form method="post">
+            <textarea name="content">{{ content }}</textarea>
+            <button type="submit" class="btn-save">Сохранить изменения </button>
+        </form>
+    </div>
+</body>
+</html>

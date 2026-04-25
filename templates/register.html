@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация | CloudHome</title>
+    <style>
+        body { background: #0f0f0f; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .reg-box { background: #1a1a1a; padding: 30px; border-radius: 12px; border: 1px solid #333; width: 300px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #252525; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #00c853; border: none; color: white; font-weight: bold; border-radius: 5px; cursor: pointer; }
+        .captcha-text { background: #333; padding: 5px; border-radius: 4px; font-weight: bold; color: #ffcc00; }
+    </style>
+</head>
+<body>
+    <div class="reg-box">
+        <h2>Регистрация</h2>
+        <form method="post">
+            <input name="user" placeholder="Логин (Ник)" required>
+            <input name="pw" type="password" placeholder="Пароль" required>
+            
+            <p style="font-size: 14px;">Реши пример (Капча):</p>
+            <div class="captcha-text">{{ captcha }}</div>
+            <input name="captcha" placeholder="Ответ" required>
+            
+            <button type="submit">Создать аккаунт</button>
+        </form>
+        <p style="font-size: 12px; margin-top: 15px;">
+            <a href="/login" style="color: #00aaff; text-decoration: none;">Уже есть аккаунт? Войти</a>
+        </p>
+    </div>
+</body>
+</html>в

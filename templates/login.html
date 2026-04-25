@@ -1,0 +1,11 @@
+<body style="background:#121212; color:white; font-family:sans-serif;">
+    <h2>Вход в CloudHome</h2>
+    <form method="post">
+        <input name="user" placeholder="Ник" required><br><br>
+        <input name="pw" type="password" placeholder="Пароль" required><br><br>
+        <p>Решите пример: {{ captcha }}</p>
+        <input name="captcha" placeholder="Ответ" required><br><br>
+        <button type="submit">Войти</button>
+    </form>
+    <a href="/register" style="color:cyan;">Нет аккаунта? Регистрация</a>
+</body>

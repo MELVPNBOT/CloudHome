@@ -1,141 +1,68 @@
-import os
+import asyncio
 import json
-import base64
 import random
-import hashlib
-from flask import Flask, render_template, request, redirect, url_for, session
-from github import Github, GithubException
+import string
+import threading
+import aiohttp
+from flask import Flask
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.filters import Command
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
+API_TOKEN = '8635677711:AAF1VuX3AqiAUUXp5ZHcZXNSn6THDpOC0eY'
+ADMIN_ID = 7768798243
+GITHUB_TOKEN = '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'
+REPO = 'MELVPNBOT/lolvpnsite'
+FILE_PATH = 'code.json'
+
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher()
 app = Flask(__name__)
-app.secret_key = "cloud_home_super_secret_key_123" # Любая случайная строка
-
-# --- КОНФИГУРАЦИЯ ---
-# Твой новый токен
-TOKEN = "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"
-REPO_NAME = "MELVPNBOT/CloudHome"
-DB_PATH = "db.json"
-
-try:
-    g = Github(TOKEN)
-    repo = g.get_repo(REPO_NAME)
-except Exception as e:
-    print(f"Ошибка подключения к GitHub: {e}")
-
-# --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
-
-def get_db():
-    try:
-        f = repo.get_contents(DB_PATH)
-        data = json.loads(base64.b64decode(f.content).decode('utf-8'))
-        return data, f.sha
-    except Exception as e:
-        print(f"Ошибка чтения базы данных: {e}")
-        return {}, None
-
-def save_db(data, sha):
-    repo.update_file(DB_PATH, "update database", json.dumps(data, indent=4), sha)
-
-def generate_captcha():
-    a, b = random.randint(10, 99), random.randint(10, 99)
-    session['captcha_ans'] = a + b
-    return f"{a} + {b}"
-
-# --- РОУТЫ (ЛОГИКА) ---
 
 @app.route('/')
-def index():
-    if 'user' in session:
-        return redirect(url_for('dashboard'))
-    return redirect(url_for('login'))
+def home(): return "I'm alive", 200
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        # Проверка капчи
-        user_ans = request.form.get('captcha')
-        if not user_ans or int(user_ans) != session.get('captcha_ans'):
-            return "❌ Капча решена неверно! <a href='/register'>Назад</a>"
-        
-        username = request.form.get('user')
-        password = hashlib.sha256(request.form.get('pw').encode()).hexdigest()
-        
-        db, sha = get_db()
-        if username in db:
-            return "❌ Такой пользователь уже есть!"
-        
-        db[username] = {"password": password}
-        save_db(db, sha)
-        
-        # Создаем личную папку пользователя (через файл-маркер)
-        repo.create_file(f"{username}/.init", "user init", "", branch="main")
-        return redirect(url_for('login'))
-    
-    captcha_text = generate_captcha()
-    return render_template('register.html', captcha=captcha_text)
+def run_v(): app.run(host='0.0.0.0', port=10000) # Render использует порт 10000
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form.get('user')
-        password = hashlib.sha256(request.form.get('pw').encode()).hexdigest()
-        
-        db, _ = get_db()
-        if username in db and db[username]['password'] == password:
-            session['user'] = username
-            return redirect(url_for('dashboard'))
-        return "❌ Неверный логин или пароль! <a href='/login'>Назад</a>"
-    
-    return render_template('login.html', captcha=generate_captcha())
+async def update_github(code):
+    url = f"https://api.github.com/repos/{REPO}/contents/{FILE_PATH}"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    async with aiohttp.ClientSession() as s:
+        async with s.get(url, headers=headers) as r:
+            if r.status != 200: return False
+            d = await r.json()
+            c = json.loads(aiohttp.helpers.b64decode(d['content']).decode())
+        c.append({"code": code, "activations": 1})
+        upd = aiohttp.helpers.b64encode(json.dumps(c, indent=2).encode()).decode()
+        payload = {"message": "new key", "content": upd, "sha": d['sha']}
+        async with s.put(url, headers=headers, json=payload) as r:
+            return r.status == 200
 
-@app.route('/dashboard')
-def dashboard():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    
-    user_dir = session['user']
-    try:
-        files = repo.get_contents(user_dir)
-        # Фильтруем системный файл .init
-        user_files = [f for f in files if f.name != ".init"]
-    except:
-        user_files = []
-        
-    return render_template('dashboard.html', files=user_files)
+@dp.message(Command("start"))
+async def s(m: types.Message):
+    kb = [
+        [KeyboardButton(text="Купить ВПН"), KeyboardButton(text="Подключить впн")],
+        [KeyboardButton(text="Тестовый впн")]
+    ]
+    if m.from_user.id == ADMIN_ID: kb.append([KeyboardButton(text="Выдать ключ")])
+    await m.answer("MEL VPN работает!", reply_markup=ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True))
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    if 'user' not in session: return redirect(url_for('login'))
-    file = request.files['file']
-    if file:
-        path = f"{session['user']}/{file.filename}"
-        repo.create_file(path, f"Upload: {file.filename}", file.read())
-    return redirect(url_for('dashboard'))
+@dp.message(F.text == "Купить ВПН")
+async def b(m: types.Message): await m.answer("Купить у @sanek37r")
 
-@app.route('/delete/<path:name>')
-def delete(name):
-    if 'user' not in session: return redirect(url_for('login'))
-    path = f"{session['user']}/{name}"
-    f = repo.get_contents(path)
-    repo.delete_file(f.path, f"Delete: {name}", f.sha)
-    return redirect(url_for('dashboard'))
+@dp.message(F.text == "Тестовый впн")
+async def t(m: types.Message): await m.answer("отключен")
 
-@app.route('/rename', methods=['POST'])
-def rename():
-    if 'user' not in session: return redirect(url_for('login'))
-    old_name = request.form.get('old')
-    new_name = request.form.get('new')
-    user = session['user']
-    
-    # В GitHub API переименование = Копирование + Удаление оригинала
-    old_f = repo.get_contents(f"{user}/{old_name}")
-    repo.create_file(f"{user}/{new_name}", f"Rename to {new_name}", base64.b64decode(old_f.content))
-    repo.delete_file(old_f.path, f"Remove old {old_name}", old_f.sha)
-    return redirect(url_for('dashboard'))
+@dp.message(F.text == "Выдать ключ")
+async def g(m: types.Message):
+    if m.from_user.id != ADMIN_ID: return
+    key = "GIFT-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    if await update_github(key): await m.answer(f"Ключ: `{key}`", parse_mode="Markdown")
+    else: await m.answer("Ошибка")
 
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login'))
+async def main():
+    threading.Thread(target=run_v, daemon=True).start()
+    await dp.start_polling(bot)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    asyncio.run(main())
